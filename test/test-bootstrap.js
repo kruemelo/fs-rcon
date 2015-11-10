@@ -1,6 +1,7 @@
 require.config({
 	paths: {
-		chai: '/node_modules/chai/chai'
+		chai: '/node_modules/chai/chai',
+		cryptojs: '/libs/CryptoJS'
 	},
 	baseUrl: '/'
 });

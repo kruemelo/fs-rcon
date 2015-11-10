@@ -10,6 +10,7 @@
   "latedef": true,
   "laxcomma": true,
   "globals": {
+    "XMLHttpRequest": true,
     "jQuery": true,
     "define": false,
     "require": false,

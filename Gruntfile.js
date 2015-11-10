@@ -26,10 +26,11 @@ module.exports = function (grunt) {
             options: {
                 base: 'test',
                 main: 'test-bootstrap',
-                requireLib: 'libs/require.js',
+                requireLib: '../libs/require.js',
                 files: ['./**/*Spec.js'],
                 router: require('./test/router'),
-                //keepAlive: true,
+                port: 3000,
+                // keepAlive: true
             },
 
             target: {
