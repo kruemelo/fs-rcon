@@ -24,18 +24,97 @@
     this.SID = null; 
   };
 
+
   FSRCON.hash = function (v) {
     return CryptoJS.SHA512(v).toString(CryptoJS.enc.Base64);
   };
 
-  FSRCON.prototype.send = function () {
 
+  FSRCON.url = function (instance, pathname) {
+    var url = '';
+
+    // protocol
+    url += instance.protocol;
+    url += '://';
+
+    // hostname
+    url += instance.hostname;
+
+    // port
+    url += instance.port ? ':' + instance.port : '';
+
+    // pathname
+    url += '/' + pathname;
+
+    return url;
+  };  // url
+
+
+  /**
+  * connect - server side only
+  *
+  **/
+  FSRCON.prototype.connect = function (options, callback) {
+
+    if (!options.clientRandomKey) {
+      callback(new Error('EINVALIDCRK'));
+    } 
+
+    this.clientRandomKey = options.clientRandomKey;
+    this.serverRandomKey =  FSRCON.hash(String(Math.random()) + String(Math.random()));
+    this.SID = FSRCON.hash(this.clientRandomKey + this.serverRandomKey);
+
+    callback(null);
+
+    return this;
+  };  // connect
+
+
+  FSRCON.prototype.send = function (data, urlPathname, callback) {
+
+    var xhr,
+      url = FSRCON.url(this, urlPathname);
+
+    xhr = new XMLHttpRequest();
+
+    // The last parameter must be set to true to make an asynchronous request
+    xhr.open('POST', url, true);
+
+    xhr.setRequestHeader('Content-type', 'application/json');
+    xhr.setRequestHeader('Accept', 'application/json');
+    
+    xhr.onload = function () {
+      var parsed;
+
+      try {
+        parsed = JSON.parse(this.response);
+      }
+      catch (err) {}
+
+      if (undefined !== parsed && this.status >= 200 && this.status < 300) {
+        callback(null, parsed);
+      } 
+      else {
+        callback(new Error(this.response));
+      }      
+    };
+
+    xhr.send(JSON.stringify({
+      SID: this.SID,
+      data: data
+    }));
+
+    return xhr;
   };
 
+
+  /**
+  * init connection - client side only
+  **/
   FSRCON.prototype.init = function (options, callback) {
 
     var self = this,
-      pathname = 'init',
+      urlPathname = 'init',
       url = '',
       xhr,
       data = {};
@@ -44,18 +123,7 @@
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';
     
-    // protocol
-    url += this.protocol;
-    url += '://';
-
-    // hostname
-    url += this.hostname;
-
-    // port
-    url += this.port ? ':' + this.port : '';
-
-    // pathname
-    url += '/' + pathname;
+    url = FSRCON.url(this, urlPathname);
 
     xhr = new XMLHttpRequest();
 
@@ -93,7 +161,7 @@
     xhr.send(JSON.stringify(data));
 
     return this;
-  };
+  };  // init
 
   return FSRCON;
 

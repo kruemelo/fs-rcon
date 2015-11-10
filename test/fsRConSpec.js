@@ -50,9 +50,39 @@ define([
 
 
     it('should send a request', function (done) {
-      var rcon = new FSRCON();
+      var rcon = new FSRCON(),
+        options;
+      
       assert.isFunction(rcon.send);
-      done();
+
+      options = {
+        hostname: 'localhost',
+        port: 3000
+      };
+
+      rcon.init(options, function () {
+
+        var data = (function(){var s = ''; for (var i=0; i < 1000000; ++i) {s += i;} return s;}()),
+          xhr;
+// console.log('data length:', data.length);
+        xhr = rcon.send(data, 'test', function (err, result) {
+          
+          assert.isNull(err, 'should not have an error');
+
+          assert.equal(result.foo.data, data);
+          
+          done();
+        });
+
+        xhr.upload.onprogress = function(e) {
+          assert.isNull(e);
+          if (e.lengthComputable) {
+            console.log('progress: ', (e.loaded / e.total) * 100);
+          }
+        };
+
+      });
+
     });
 
   }); // describe fs-rcon

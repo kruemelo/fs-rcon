@@ -3,34 +3,46 @@
 module.exports = function(server){
 
   var bodyParser = require('body-parser'),
-    requirejs = require('requirejs'),
-    CryptoJS = requirejs('libs/CryptoJS.js'),
+    FSRCON = require('../fs-rcon.js'),
     connections = {};
 
-  server.use(bodyParser.json()); // for parsing application/json
+  server.use(bodyParser.json({limit: '6mb'})); // for parsing application/json
+
+  server.post('/test', function (req, res) {
+
+    var reqSID = req.body && req.body.SID ? req.body.SID : undefined,
+      rcon = connections[reqSID];
+
+    if (!rcon) {
+      res.status(500).end(new Error('ECON'));
+      return;
+    }
+
+    res.json({some: 42, foo: req.body});
+
+  });
 
   server.post('/init', function (req, res){
 
-    var connection = {};
+    var clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined,
+      rcon = new FSRCON();
 
-    connection.clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined;
+    rcon.connect({
+      clientRandomKey: clientRandomKey
+    }, function (err) {
 
-    if (!connection.clientRandomKey) {
-      res.status(500).end('EINVALIDCRK');
-      return;
-    } 
+      if (err) {
+        res.status(500).end(err.message);
+        return;        
+      }
 
-    connection.serverRandomKey =  CryptoJS.SHA512(String(Math.random()) + String(Math.random()))
-      .toString(CryptoJS.enc.Base64);
+      connections[rcon.SID] = rcon;
 
-    connection.SID = CryptoJS.SHA512(connection.clientRandomKey + connection.serverRandomKey)
-      .toString(CryptoJS.enc.Base64);
-
-    connections[connection.SID] = connection;
-
-    res.end(JSON.stringify({
-      SRK: connection.serverRandomKey
-    }));
+      res.end(JSON.stringify({
+        SRK: rcon.serverRandomKey
+      }));
+      
+    });
 
   });
 };
