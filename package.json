@@ -1,6 +1,6 @@
 {
   "name": "fs-rcon",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A connection to remote fs",
   "main": "fs-rcon.js",
   "keywords": [
@@ -26,5 +26,8 @@
   },
   "dependencies": {
     "body-parser": "^1.14.1"
+  },
+  "scripts": {
+    "test": "grunt"
   }
 }

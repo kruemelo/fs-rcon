@@ -14,7 +14,7 @@ module.exports = function(server){
       rcon = connections[reqSID];
 
     if (!rcon) {
-      res.status(500).end(new Error('ECON'));
+      res.status(500).end('ECON');
       return;
     }
 
