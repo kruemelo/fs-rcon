@@ -5,11 +5,11 @@ define([
 
   var assert = chai.assert;
 
-  describe('fs-rcon', function () {
+  describe('fs-rcon module', function () {
     
 
     it('should have loaded', function () {
-      assert.isFunction(FSRCON);
+      assert.isObject(FSRCON);
     });
 
 
@@ -23,9 +23,20 @@ define([
     });
 
 
+    it('should encrypt/decrypt a value', function () {
+
+      var message = 'my message',
+        secret = 'my secret',
+        encrypted = FSRCON.encrypt(message, secret),
+        decrypted = FSRCON.decrypt(encrypted, secret);
+
+      assert.strictEqual(decrypted, message);
+    });
+
+
     it('should initialize a connection', function (done) {
       
-      var rcon = new FSRCON(),
+      var rcon = FSRCON.Client(),
         options;
 
       assert.isFunction(rcon.init);
@@ -50,7 +61,8 @@ define([
 
 
     it('should send a request', function (done) {
-      var rcon = new FSRCON(),
+
+      var rcon = FSRCON.Client(),
         options;
       
       assert.isFunction(rcon.send);
@@ -64,7 +76,7 @@ define([
 
         var data = (function(){var s = ''; for (var i=0; i < 1000000; ++i) {s += i;} return s;}()),
           xhr;
-// console.log('data length:', data.length);
+
         xhr = rcon.send(data, 'test', function (err, result) {
           
           assert.isNull(err, 'should not have an error');

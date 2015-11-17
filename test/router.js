@@ -25,7 +25,7 @@ module.exports = function(server){
   server.post('/init', function (req, res){
 
     var clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined,
-      rcon = new FSRCON();
+      rcon = FSRCON.Server();
 
     rcon.connect({
       clientRandomKey: clientRandomKey
