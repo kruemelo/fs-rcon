@@ -80,8 +80,8 @@ define([
         xhr = rcon.send(data, 'test', function (err, result) {
           
           assert.isNull(err, 'should not have an error');
-
-          assert.equal(result.foo.data, data);
+          assert.isString(result, 'result data type');
+          assert.equal(JSON.parse(result).foo.data, data);
           
           done();
         });

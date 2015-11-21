@@ -137,15 +137,8 @@
     xhr.setRequestHeader('Accept', 'application/json');
     
     xhr.onload = function () {
-      var parsed;
-
-      try {
-        parsed = JSON.parse(this.response);
-      }
-      catch (err) {}
-
-      if (undefined !== parsed && this.status >= 200 && this.status < 300) {
-        callback(null, parsed);
+      if (this.status >= 200 && this.status < 300) {
+        callback(null, this.response);
       } 
       else {
         callback(new Error(this.response));
