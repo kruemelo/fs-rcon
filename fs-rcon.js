@@ -109,6 +109,10 @@
       }      
     };
 
+    xhr.onerror = function (ev) {
+      callback(new Error('ECON'));
+    };
+
     this.clientRandomKey = FSRCON.hash(String(Math.random()) + String(Math.random()));
     this.serverRandomKey = null;
     this.SID = null;
