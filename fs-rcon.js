@@ -92,6 +92,7 @@
 
     xhr.setRequestHeader('Content-type', 'application/json');
     xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('Cache-Control', 'no-cache');
     
     xhr.onload = function () {
 
@@ -139,6 +140,7 @@
 
     xhr.setRequestHeader('Content-type', 'application/json');
     xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('Cache-Control', 'no-cache');
     
     xhr.onload = function () {
       if (this.status >= 200 && this.status < 300) {
