@@ -29,7 +29,6 @@ define([
         secret = 'my secret',
         encrypted = FSRCON.encrypt(message, secret),
         decrypted = FSRCON.decrypt(encrypted, secret);
-
       assert.strictEqual(decrypted, message);
     });
 
