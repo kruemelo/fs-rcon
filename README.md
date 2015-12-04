@@ -19,7 +19,7 @@ var rcon = new FSRCON.Client({
 })
 ```
 
-#### Client.init(urlPathname, callback)
+#### Client.init(urlPathname)
 
 initialize a connection to remote server. Returns a promise.
 
