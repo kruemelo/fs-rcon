@@ -91,6 +91,7 @@
 
 
   var Client = FSRCON.Client = function (options) {
+    options = options || {};
     this.protocol = options.protocol || 'http';
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';

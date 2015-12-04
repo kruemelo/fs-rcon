@@ -5,29 +5,26 @@ API
 
 ### Instance methods
 
-#### FSRPC.Client
+#### FSRCON.Client
 
 create a client instance
 
 ```
-var rcon = new FSRPC.Client()
-```
-
-#### Client.init(options, callback)
-
-initialize a connection to remote server. Returns a promise.
-
-```
-var rcon = new FSRPC.Client(),
-  options = {
+var rcon = new FSRCON.Client({
     protocol: 'http',
     hostname: 'localhost',
     port: 3000,
     // optional: account id
-    accountId: 'xyz'
-  };
+    accountId: 'xyz'  
+})
+```
 
-rcon.init(options)
+#### Client.init(urlPathname, callback)
+
+initialize a connection to remote server. Returns a promise.
+
+```
+rcon.init('fsrcon/init')
   .then(
     // resolved
     function () {
@@ -45,20 +42,19 @@ rcon.init(options)
 start authenticated connection. Returns a promise.
 
 ```
-var rcon = new FSRPC.Client(),
-  options = {
+var rcon = new FSRCON.Client({
     protocol: 'http',
     hostname: 'localhost',
     port: 3000,
     // required: account id
     accountId: 'xyz'
-  };
+  });
 
-rcon.init(options)
+rcon.init('fsrcon/init')
   .then(
     // resolved
     function () {
-      rcon.connect('restricted', 'my secret')
+      rcon.connect('fsrcon/connect', 'my secret')
         .then(
           function () {
             // authenticated
@@ -136,13 +132,11 @@ var connections = {};
 
 server.post('/init', function (req, res){
 
-  var clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined,
-    clientAccountKey = eq.body && req.body.CAK ? req.body.CAK : undefined,
-    rcon = FSRCON.Server();
+  var rcon = FSRCON.Server();
 
   rcon.init({
-    clientRandomKey: clientRandomKey,
-    clientAccountKey: clientAccountKey
+    clientRandomKey: req.body && req.body.CRK,
+    clientAccountKey: eq.body && req.body.CAK
   }, function (err) {
 
     if (err) {
