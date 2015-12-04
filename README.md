@@ -172,7 +172,7 @@ rcon.connect(
     clientHashedPassword: req.body.CHP,
     clientVerificationKey: req.body.CVK
   }, 
-  function (err) {     
+  function (err, accountId) {     
     if (err) {
       res.status(503).end();
     }

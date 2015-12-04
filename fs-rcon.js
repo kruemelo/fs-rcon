@@ -339,16 +339,14 @@
 
 
   Server.prototype.findAccount = function (accounts, clientAccountKey, hashKey) {
-    var account;
-
+    var result;
     Object.keys(accounts).some(function (accountId) {
       if (clientAccountKey === FSRCON.accountKey(accountId, hashKey)) {
-        account = accounts[accountId];
+        result = accountId;
         return true;
       }
     });
-    
-    return account;
+    return result;
   };  // Server.findAccount()
 
 
@@ -357,40 +355,48 @@
     var accounts = options.accounts,
       clientHashedPassword = options.clientHashedPassword,
       clientVerificationKey = options.clientVerificationKey,
+      accountId,
       account,
       password;
 
-    this.clientOK = false;
-    this.serverVerification = null;
-    this.serverHashedPassword = null;
-
-    account = this.findAccount(
-      accounts,
-      this.clientAccountKey,
-      this.clientRandomKey
-    );
-
-    password = account && account.password;
-
-    this.serverHashedPassword = FSRCON.hashPassword(
-      password,
-      this.clientRandomKey, 
-      this.serverRandomKey
-    );
-
-    this.clientOK = clientHashedPassword && clientHashedPassword === this.serverHashedPassword;
-
-    if (!this.clientOK) {
-      return callback(new Error('EAUTH'));
-    }
-
-    this.serverVerification = FSRCON.verify(
-      clientVerificationKey,
-      this.serverRandomKey,
-      this.serverHashedPassword
-    );
+    try {
     
-    callback(null);
+      this.clientOK = false;
+      this.serverVerification = null;
+      this.serverHashedPassword = null;
+
+      accountId = this.findAccount(
+        accounts,
+        this.clientAccountKey,
+        this.clientRandomKey
+      );
+
+      account = accounts[accountId];
+      password = account && account.password;
+
+      this.serverHashedPassword = FSRCON.hashPassword(
+        password,
+        this.clientRandomKey, 
+        this.serverRandomKey
+      );
+
+      this.clientOK = clientHashedPassword && clientHashedPassword === this.serverHashedPassword;
+
+      if (!this.clientOK) {
+        throw new Error('EAUTH');
+      }
+
+      this.serverVerification = FSRCON.verify(
+        clientVerificationKey,
+        this.serverRandomKey,
+        this.serverHashedPassword
+      );
+      
+      callback(null, accountId);
+    }
+    catch (err) {
+      callback(err);
+    }
 
   };  // Server.connect()
 
