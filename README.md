@@ -216,7 +216,7 @@ FSRCON.encrypt('my message', 'my secret')
 get the decrypted string for the AES-encryped message 
 
 ```
-FSRCON.encrypt(
+FSRCON.decrypt(
   '{"ct":"yX4XfECTghy/Cf8LYwzmOQ==","iv":"01472720a2455c96b297dc9ba68e3cbe","s":"34c58f289265cbfc"}', 
   'my secret'
 )
