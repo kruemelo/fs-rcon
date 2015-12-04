@@ -82,7 +82,7 @@ module.exports = function(server){
       }, 
       function (err) {     
         if (err) {
-          res.status(503).end();
+          res.status(403).end();
           return;
         }
         res.json({STR: rcon.serverVerification});
@@ -97,7 +97,7 @@ module.exports = function(server){
       decrypted;
 
     if (!rcon || !rcon.clientOK) {
-      res.status(503).end();
+      res.status(403).end();
       return;
     }
 
