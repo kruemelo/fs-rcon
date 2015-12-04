@@ -311,6 +311,7 @@
     this.clientRandomKey = null;
     this.serverRandomKey = null;
     this.SID = null; 
+    this.accountId = null;
     this.clientOK = null;
     this.serverVerification = null;
     this.serverHashedPassword = null;
@@ -327,6 +328,7 @@
     this.serverRandomKey = FSRCON.randomKey();
     this.SID = FSRCON.sid(this.clientRandomKey, this.serverRandomKey);
 
+    this.accountId = null;
     this.clientOK = null;
     this.serverVerification = null;
     this.serverHashedPassword = null;
@@ -353,10 +355,10 @@
 
   Server.prototype.connect = function (options, callback) {
 
-    var accounts = options.accounts,
+    var error = null,
+      accounts = options.accounts,
       clientHashedPassword = options.clientHashedPassword,
       clientVerificationKey = options.clientVerificationKey,
-      accountId,
       account,
       password;
 
@@ -366,13 +368,17 @@
       this.serverVerification = null;
       this.serverHashedPassword = null;
 
-      accountId = this.findAccount(
+      this.accountId = this.findAccount(
         accounts,
         this.clientAccountKey,
         this.clientRandomKey
       );
 
-      account = accounts[accountId];
+      if (!this.accountId) {
+        throw new Error('EAUTH');
+      }
+
+      account = accounts[this.accountId];
       password = account && account.password;
 
       this.serverHashedPassword = FSRCON.hashPassword(
@@ -393,12 +399,12 @@
         this.serverHashedPassword
       );
       
-      callback(null, accountId);
     }
     catch (err) {
-      callback(err);
+      error = err;
     }
 
+    callback(error, this.accountId);
   };  // Server.connect()
 
 
