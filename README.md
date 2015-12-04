@@ -1,8 +1,5 @@
 A connection to remote fs
 
-github: https://github.com/kruemelo/fs-rcon.git
-npm: https://www.npmjs.com/package/fs-rcon
-
 API
 ---
 
@@ -18,24 +15,75 @@ var rcon = new FSRPC.Client()
 
 #### Client.init(options, callback)
 
-initialize a connection to remote server
+initialize a connection to remote server. Returns a promise.
 
 ```
 var rcon = new FSRPC.Client(),
   options = {
     protocol: 'http',
     hostname: 'localhost',
-    port: 3000
+    port: 3000,
+    // optional: account id
+    accountId: 'xyz'
   };
 
-rcon.init(options, function (err){
-  ..
-});
+rcon.init(options)
+  .then(
+    // resolved
+    function () {
+      ..
+    },  
+    // rejected
+    function (err) {
+      ..
+    }
+  );
+```
+
+#### Client.connect(urlPathname, secret)
+
+start authenticated connection. Returns a promise.
+
+```
+var rcon = new FSRPC.Client(),
+  options = {
+    protocol: 'http',
+    hostname: 'localhost',
+    port: 3000,
+    // required: account id
+    accountId: 'xyz'
+  };
+
+rcon.init(options)
+  .then(
+    // resolved
+    function () {
+      rcon.connect('restricted', 'my secret')
+        .then(
+          function () {
+            // authenticated
+            ..
+          },
+          function (err) {
+            // authentication failed
+            ..
+          }
+        );
+    },  
+    // rejected
+    function (err) {
+      ..
+    }
+  );
 ```
 
 #### Client.send(data, urlPathname, callback)
 
 send data to remote server. init() must be called before send().
+
+For authenticated connections data will be sent encrypted.
+
+Returns xhr.
 
 * data: string of data to be sent
 * urlPathname: string url path 
@@ -69,18 +117,19 @@ data will be sent as stringified JSON via POST:
 * clientRandomKey
 * serverRandomKey
 * SID 
+* serverOK
 
 #### FSRCON.Server()
 
 create a server instance
 
 ```
- var rcon = FSRCON.Server();
+ var rcon = new FSRCON.Server();
 ```
 
-#### Server.connect(clientRandomKey)
+#### Server.init(clientRandomKey)
 
-connect to a client when `Client.init()` was received.
+initializes a connection to a client when `Client.init()` was received.
 
 ```
 var connections = {};
@@ -88,10 +137,12 @@ var connections = {};
 server.post('/init', function (req, res){
 
   var clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined,
+    clientAccountKey = eq.body && req.body.CAK ? req.body.CAK : undefined,
     rcon = FSRCON.Server();
 
-  rcon.connect({
-    clientRandomKey: clientRandomKey
+  rcon.init({
+    clientRandomKey: clientRandomKey,
+    clientAccountKey: clientAccountKey
   }, function (err) {
 
     if (err) {
@@ -110,11 +161,35 @@ server.post('/init', function (req, res){
 });
 ```
 
+#### Server.connect(options)
+
+authenticate connection.
+
+```
+rcon.connect(
+  {
+    accounts: accounts,
+    clientHashedPassword: req.body.CHP,
+    clientVerificationKey: req.body.CVK
+  }, 
+  function (err) {     
+    if (err) {
+      res.status(503).end();
+    }
+    else {
+      res.json({STR: rcon.serverVerification});
+    }
+  }
+);
+```
+
+
 #### Server instance fields
 
 * clientRandomKey
 * serverRandomKey
 * SID
+* clientOK
 
 ### Static Methods
 
@@ -158,7 +233,7 @@ Client:
 <script src="fs-rcon.js">
 <script>
   // DOM
-  var connection = window.FSRCON.Client();
+  var connection = new window.FSRCON.Client();
   ..
 </script>
 ```
@@ -167,7 +242,7 @@ Server:
 
 ```
 var FSRCON = require('fs-rcon'),
-  connection = FSRCON.Server();
+  connection = new FSRCON.Server();
 ..
 ```
 

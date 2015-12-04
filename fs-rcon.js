@@ -57,80 +57,205 @@
   };
 
 
-  FSRCON.Client = function () {
-    return new Client();
-  };
-
-  var Client = function () {
-    this.protocol = null;
-    this.hostname = null;
-    this.port = null;
-    this.clientRandomKey = null;
-    this.serverRandomKey = null;
-    this.SID = null; 
+  FSRCON.randomKey = function () {
+    return FSRCON.hash(String(Math.random()) + String(Math.random()));
   };
 
 
-  Client.prototype.init = function (options, callback) {
+  FSRCON.accountKey = function (accountId, randomKey) {
+    return FSRCON.hash(accountId + randomKey);
+  };
 
-    var self = this,
-      urlPathname = 'init',
-      url = '',
-      xhr,
-      data = {};
+  // SA1 == SB0
+  FSRCON.password = function (passwordS0, accountId) {
+    return FSRCON.hash(String(passwordS0) + String(accountId));
+  };
 
+
+  // SA2  
+  FSRCON.hashPassword = function (passwordS1, clientRandomKey, serverRandomKey) {
+    return FSRCON.hash(passwordS1 + clientRandomKey + serverRandomKey);
+  };
+
+
+  FSRCON.sid = function (clientRandomKey, serverRandomKey) {
+    return FSRCON.hash(clientRandomKey + serverRandomKey);
+  };
+
+
+  FSRCON.verify = function (clientVerificationKey, serverRandomKey, serverHashedPassword) {
+    return FSRCON.hash(
+      clientVerificationKey + serverRandomKey + serverHashedPassword
+    );
+  };
+
+
+  var Client = FSRCON.Client = function (options) {
     this.protocol = options.protocol || 'http';
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';
-    
-    url = FSRCON.url(this, urlPathname);
-
-    xhr = new XMLHttpRequest();
-
-    // The last parameter must be set to true to make an asynchronous request
-    xhr.open('POST', url, true);
-
-    xhr.setRequestHeader('Content-type', 'application/json');
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.setRequestHeader('Cache-Control', 'no-cache');
-    
-    xhr.onload = function () {
-
-      var parsedResponse = JSON.parse(this.response);
-
-      if (parsedResponse.SRK && this.status >= 200 && this.status < 300) {
-        
-        self.serverRandomKey = parsedResponse.SRK;
-        self.SID = FSRCON.hash(self.clientRandomKey + self.serverRandomKey);
-
-        callback(null);
-      } 
-      else {
-        callback(new Error(this.response));
-      }      
-    };
-
-    xhr.onerror = function (ev) {
-      callback(new Error('ECON'));
-    };
-
-    this.clientRandomKey = FSRCON.hash(String(Math.random()) + String(Math.random()));
+    this.clientRandomKey = FSRCON.randomKey();
+    this.accountId = options.accountId || null;
+    this.clientAccountKey = this.accountId ?
+      FSRCON.accountKey(this.accountId, this.clientRandomKey) : null;
+    this.password = null; // SA1
+    this.hashedPassword = null; // SA2
     this.serverRandomKey = null;
-    this.SID = null;
+    this.clientVerificationKey = null;
+    this.serverOK = null;
+    this.SID = null;  
+  }; 
 
-    data = {
-      CRK: this.clientRandomKey
-    };
+  
+  Client.prototype.init = function (urlPathname) {
 
-    xhr.send(JSON.stringify(data));
+    var self = this,
+      data = {};
 
-    return this;
-  };  // Client.init()
+    urlPathname = urlPathname || 'fsrcon/init';
+
+    return new Promise(function (resolve, reject) {
+      
+      var xhr = new XMLHttpRequest(),
+        url = FSRCON.url(self, urlPathname);
+
+      self.serverOK = null;
+
+      xhr.open('POST', url, true);
+
+      xhr.setRequestHeader('Content-type', 'application/json');
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('Cache-Control', 'no-cache');
+      
+      xhr.onload = function () {
+
+        var parsedResponse;
+
+        try {
+          parsedResponse = JSON.parse(this.response);
+
+          if (parsedResponse && parsedResponse.SRK && this.status >= 200 && this.status < 300) {            
+            self.serverRandomKey = parsedResponse.SRK;
+            self.SID = FSRCON.sid(self.clientRandomKey, self.serverRandomKey);
+          } 
+          else {
+            throw(new Error(this.response));
+          }                
+        }
+        catch (e) {
+          reject(e);
+          return;
+        }
+        resolve();
+      };
+
+      xhr.onerror = function () {
+        reject(new Error('ECON'));
+      };
+
+      data = {
+        CRK: self.clientRandomKey        
+      };
+
+      if (self.clientAccountKey) {
+        data.CAK = self.clientAccountKey;
+      }
+
+      xhr.send(JSON.stringify(data));
+
+    });
+  };  // Client.init
+
+
+  Client.prototype.connect = function (urlPathname, passwordS0) {
+
+    var self = this,
+      data = {};
+
+    urlPathname = urlPathname || 'fsrcon/connect';
+
+    this.serverOK = false;    
+
+    // SA1 (== SB0)
+    this.password = FSRCON.password(
+      passwordS0, 
+      this.accountId
+    );
+
+    this.hashedPassword = FSRCON.hashPassword(
+      this.password,
+      this.clientRandomKey,
+      this.serverRandomKey
+    );
+
+    this.clientVerificationKey = FSRCON.randomKey();
+
+    return new Promise(function (resolve, reject) {
+
+      var xhr = new XMLHttpRequest(),
+        url = FSRCON.url(self, urlPathname);
+
+      // The last parameter must be set to true to make an asynchronous request
+      xhr.open('POST', url, true);
+
+      xhr.setRequestHeader('Content-type', 'application/json');
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.setRequestHeader('Cache-Control', 'no-cache');
+      
+      xhr.onload = function () {
+
+        var parsedResponse,
+          serverVerification,
+          expectedTestResult;
+
+        try {
+          parsedResponse = JSON.parse(this.response);
+          serverVerification = parsedResponse && parsedResponse.STR;
+          if (serverVerification && this.status >= 200 && this.status < 300) {
+            
+            expectedTestResult = FSRCON.verify(
+              self.clientVerificationKey,
+              self.serverRandomKey,
+              self.hashedPassword
+            );
+
+            self.serverOK = serverVerification === expectedTestResult;
+
+            if (!self.serverOK) {
+              throw new Error('ESERVERAUTH');
+            }
+          } 
+          else {
+            throw new Error(this.response);
+          }                   
+        }
+        catch (e) {
+          reject(e);
+          return;
+        }
+        resolve();
+      };
+
+      xhr.onerror = function () {
+        reject(new Error('ECLIENTAUTH'));
+      };
+
+      data = {
+        SID: self.SID,
+        CHP: self.hashedPassword,
+        CVK: self.clientVerificationKey
+      };
+
+      xhr.send(JSON.stringify(data));
+
+    });
+  };  // Client.connect
 
 
   Client.prototype.send = function (data, urlPathname, callback) {
 
-    var xhr,
+    var self = this,
+      xhr,
       url = FSRCON.url(this, urlPathname);
 
     xhr = new XMLHttpRequest();
@@ -143,51 +268,130 @@
     xhr.setRequestHeader('Cache-Control', 'no-cache');
     
     xhr.onload = function () {
-      if (this.status >= 200 && this.status < 300) {
-        callback(null, this.response);
-      } 
-      else {
-        callback(new Error(this.response));
-      }      
+      try {
+        if (this.status >= 200 && this.status < 300) {
+          if (self.serverOK) {
+            callback(null, FSRCON.decrypt(this.response, self.hashedPassword));
+          }
+          else {
+            callback(null, this.response);
+          }        
+        } 
+        else {
+          throw new Error(this.response);
+        }      
+      }
+      catch (err) {
+        callback(err);
+      }
     };
 
-    xhr.send(JSON.stringify({
-      SID: this.SID,
-      data: data
-    }));
+    if (this.serverOK) {
+      xhr.send(JSON.stringify({
+        SID: this.SID,
+        data: FSRCON.encrypt(data, this.hashedPassword)
+      }));
+    }
+    else {
+      xhr.send(JSON.stringify({
+        SID: this.SID,
+        data: data
+      }));
+    }
 
     return xhr;
   };  // Client.send()
 
-
-  FSRCON.Server = function () {
-    return new Server();
-  };
-
-
-  var Server = function () {
+  
+  /**
+  * Server 
+  **/
+  var Server = FSRCON.Server = function () {
     this.clientRandomKey = null;
     this.serverRandomKey = null;
     this.SID = null; 
+    this.clientOK = null;
+    this.serverVerification = null;
+    this.serverHashedPassword = null;
   };
 
-  /**
-  * connect - server side only
-  *
-  **/
-  Server.prototype.connect = function (options, callback) {
+
+  Server.prototype.init = function (options, callback) {
 
     if (!options.clientRandomKey) {
       callback(new Error('EINVALIDCRK'));
     } 
 
     this.clientRandomKey = options.clientRandomKey;
-    this.serverRandomKey =  FSRCON.hash(String(Math.random()) + String(Math.random()));
-    this.SID = FSRCON.hash(this.clientRandomKey + this.serverRandomKey);
+    this.serverRandomKey = FSRCON.randomKey();
+    this.SID = FSRCON.sid(this.clientRandomKey, this.serverRandomKey);
+
+    this.clientOK = null;
+    this.serverVerification = null;
+    this.serverHashedPassword = null;
+
+    this.clientAccountKey = options.clientAccountKey;
 
     callback(null);
 
     return this;
+  };  // Server.init()
+
+
+  Server.prototype.findAccount = function (accounts, clientAccountKey, hashKey) {
+    var account;
+
+    Object.keys(accounts).some(function (accountId) {
+      if (clientAccountKey === FSRCON.accountKey(accountId, hashKey)) {
+        account = accounts[accountId];
+        return true;
+      }
+    });
+    
+    return account;
+  };  // Server.findAccount()
+
+
+  Server.prototype.connect = function (options, callback) {
+
+    var accounts = options.accounts,
+      clientHashedPassword = options.clientHashedPassword,
+      clientVerificationKey = options.clientVerificationKey,
+      account,
+      password;
+
+    this.clientOK = false;
+    this.serverVerification = null;
+    this.serverHashedPassword = null;
+
+    account = this.findAccount(
+      accounts,
+      this.clientAccountKey,
+      this.clientRandomKey
+    );
+
+    password = account && account.password;
+
+    this.serverHashedPassword = FSRCON.hashPassword(
+      password,
+      this.clientRandomKey, 
+      this.serverRandomKey
+    );
+
+    this.clientOK = clientHashedPassword && clientHashedPassword === this.serverHashedPassword;
+
+    if (!this.clientOK) {
+      return callback(new Error('EAUTH'));
+    }
+
+    this.serverVerification = FSRCON.verify(
+      clientVerificationKey,
+      this.serverRandomKey,
+      this.serverHashedPassword
+    );
+    
+    callback(null);
+
   };  // Server.connect()
 
 
@@ -223,10 +427,10 @@
 
       // optionally extract iv and salt
       if (jsonObj.iv) {
-        cipherParams.iv = CryptoJS.enc.Hex.parse(jsonObj.iv)
+        cipherParams.iv = CryptoJS.enc.Hex.parse(jsonObj.iv);
       }
       if (jsonObj.s) {
-        cipherParams.salt = CryptoJS.enc.Hex.parse(jsonObj.s)
+        cipherParams.salt = CryptoJS.enc.Hex.parse(jsonObj.s);
       }
 
       return cipherParams;
