@@ -95,6 +95,7 @@
     this.protocol = options.protocol || 'http';
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';
+    this.host = options.host || this.hostname + (this.port && ':') + this.port;
     this.clientRandomKey = FSRCON.randomKey();
     this.accountId = options.accountId || null;
     this.clientAccountKey = this.accountId ?
@@ -127,6 +128,7 @@
       xhr.setRequestHeader('Content-type', 'application/json');
       xhr.setRequestHeader('Accept', 'application/json');
       xhr.setRequestHeader('Cache-Control', 'no-cache');
+      xhr.setRequestHeader('Host', self.host);
       
       xhr.onload = function () {
 
@@ -202,6 +204,7 @@
       xhr.setRequestHeader('Content-type', 'application/json');
       xhr.setRequestHeader('Accept', 'application/json');
       xhr.setRequestHeader('Cache-Control', 'no-cache');
+      xhr.setRequestHeader('Host', self.host);
       
       xhr.onload = function () {
 
