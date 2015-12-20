@@ -96,6 +96,7 @@
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';
     this.host = options.host || this.hostname + (this.port && ':') + this.port;
+    this.XMLHttpRequest = options.XMLHttpRequest || 'undefined' !== typeof window && window.XMLHttpRequest;
     this.clientRandomKey = FSRCON.randomKey();
     this.accountId = options.accountId || null;
     this.clientAccountKey = this.accountId ?
@@ -118,7 +119,7 @@
 
     return new Promise(function (resolve, reject) {
       
-      var xhr = new XMLHttpRequest(),
+      var xhr = new self.XMLHttpRequest(),
         url = FSRCON.url(self, urlPathname);
 
       self.serverOK = null;
@@ -195,7 +196,7 @@
 
     return new Promise(function (resolve, reject) {
 
-      var xhr = new XMLHttpRequest(),
+      var xhr = new self.XMLHttpRequest(),
         url = FSRCON.url(self, urlPathname);
 
       // The last parameter must be set to true to make an asynchronous request
@@ -270,6 +271,7 @@
     xhr.setRequestHeader('Content-type', 'application/json');
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.setRequestHeader('Cache-Control', 'no-cache');
+    xhr.setRequestHeader('Host', self.host);
     
     xhr.onload = function () {
       try {
