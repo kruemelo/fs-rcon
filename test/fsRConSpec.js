@@ -14,41 +14,49 @@ define([
     });
 
 
-    it('should hash a value', function () {
+    it('should hash values', function () {
       assert.isFunction(FSRCON.hash);
       assert.strictEqual(
+        FSRCON.hash(undefined, null),
+        'Enn0fxSLFQurA36JXEx9qnQ2qrkDe4ifTxa9uE3ZMkZpSePSUfj0aituvofqGMet6b63AVwACbOOu2I1l6w',
+        'should hash undefined and null'
+      );
+      assert.strictEqual(
         FSRCON.hash('0.1234'), 
-        '56KwnzFuvBUaqvqhFkG46Psj0bUIz9LiMGy7dgZPt+DF/8wj5t/pkBPp+6FDUvZF2iOu+E2uCkgotDmtHAo6JA==',
+        '56KwnzFuvBUaqvqhFkG46Psj0bUIz9LiMGy7dgZPtDF8wj5tpkBPp6FDUvZF2iOuE2uCkgotDmtHAo6JA',
         'should hash a string'
       );
+      // console.log(FSRCON.hash('0.1234'));
     });
 
 
     it('should generate a random key', function () {
-      assert.isFunction(FSRCON.randomKey);
-      assert.isString(FSRCON.randomKey());
+      assert.isFunction(FSRCON.nonce);
+      assert.isString(FSRCON.nonce());
+      assert.notEqual(FSRCON.nonce(), FSRCON.nonce(), 'not equal nonces');
+      // console.log(FSRCON.nonce());
     });
 
 
     it('should get account key', function () {
 
       var accountId = FSRCON.hash('email@domain.tld'),
-        //FSRCON.randomKey();
-        randomKey = 'cjyYImOHtla2Di8cdt4I61LVCYl1ovKzfbwM6BzRxa5+cT9qp7HEvA7DlohjEYVpy5ynPrWXkTktIidtNkVxUg==';
+        //FSRCON.nonce();
+        nonce = 'MrTwwsXGFe55xA81GBQBLqvW1ozQuFNgduQrPzTpphisosjglcsurc0KymNOqpVXGKqvzyHTxHAhnfOPOCew';
 
       assert.isFunction(FSRCON.accountKey, 'account key fn');
       assert.strictEqual(
-        FSRCON.accountKey(accountId, randomKey), 
-        'TMofT9cD/zdHL/q5W04xN+2d8JGGPK0nsufJPYKZc/PEYzpu4Gc3Wqk0wQIypXyZkXoE+bJxHxb+Ti2zdWgQJw==', 
+        FSRCON.accountKey(accountId, nonce), 
+        'MtK61V4PXD3QMFPrrg8xqkCYR0bZpMJY0APrMfJqyiLiyQiLvT9xpsTY82JE9QBd2sw3HO0GIh3oW2VukhUg', 
         'account key value'
       );
 
     });
 
 
-    it('should generate a session id from keys', function () {
+    it('should generate a session id from clent and server nonce', function () {
       assert.isFunction(FSRCON.sid);
-      assert.isString(FSRCON.sid(FSRCON.randomKey(), FSRCON.randomKey()));
+      assert.isString(FSRCON.sid(FSRCON.nonce(), FSRCON.nonce()));
     });
 
 
@@ -77,8 +85,8 @@ define([
           assert.isString(rcon.protocol, 'should have protocol set');
           assert.isString(rcon.hostname, 'should have hostname set');
           assert.isNumber(rcon.port, 'should have port set');
-          assert.isString(rcon.clientRandomKey, 'should have clientRandomKey set');
-          assert.isString(rcon.serverRandomKey, 'should have serverRandomKey set');
+          assert.isString(rcon.clientNonce, 'should have clientNonce set');
+          assert.isString(rcon.serverNonce, 'should have serverNonce set');
           assert.isString(rcon.SID, 'should have SID set');
           done();  
         }

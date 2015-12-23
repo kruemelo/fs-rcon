@@ -20,8 +20,20 @@
     AESJsonFormatter;
 
 
-  FSRCON.hash = function (v) {
-    return CryptoJS.SHA512(v).toString(CryptoJS.enc.Base64);
+  FSRCON.hash = function () {
+    // return CryptoJS.SHA512(v).toString(CryptoJS.enc.Base64);
+    var shasum = CryptoJS.algo.SHA512.create(),
+      args = Array.prototype.slice.call(arguments,0),
+      hash;
+
+    args.forEach(function (v) {
+      shasum.update(String(v));
+    });
+
+    hash = shasum.finalize();
+
+    return hash.toString(CryptoJS.enc.Base64)
+      .replace(/\W/g,'');
   };
 
 
@@ -57,35 +69,46 @@
   };
 
 
-  FSRCON.randomKey = function () {
-    return FSRCON.hash(String(Math.random()) + String(Math.random()));
+  FSRCON.nonce = function () {
+    
+    var shasum = CryptoJS.algo.SHA512.create(),
+      hash;
+
+    for (var i = 0, to = 100 + Math.random() * 100; i < to; ++i) {
+      shasum.update(String(Math.random()));
+    }
+
+    hash = shasum.finalize();
+
+    return hash.toString(CryptoJS.enc.Base64)
+      .replace(/\W/g,'');
   };
 
 
-  FSRCON.accountKey = function (accountId, randomKey) {
-    return FSRCON.hash(accountId + randomKey);
+  FSRCON.accountKey = function (accountId, nonce) {
+    return FSRCON.hash(accountId, nonce);
   };
 
   // SA1 == SB0
-  FSRCON.password = function (passwordS0, accountId) {
-    return FSRCON.hash(String(passwordS0) + String(accountId));
+  FSRCON.passwordS1 = function (passwordS0, accountId) {
+    return FSRCON.hash(passwordS0, accountId);
   };
 
 
   // SA2  
-  FSRCON.hashPassword = function (passwordS1, clientRandomKey, serverRandomKey) {
-    return FSRCON.hash(passwordS1 + clientRandomKey + serverRandomKey);
+  FSRCON.hashPassword = function (passwordS1, clientNonce, serverNonce) {
+    return FSRCON.hash(passwordS1, clientNonce, serverNonce);
   };
 
 
-  FSRCON.sid = function (clientRandomKey, serverRandomKey) {
-    return FSRCON.hash(clientRandomKey + serverRandomKey);
+  FSRCON.sid = function (clientNonce, serverNonce) {
+    return FSRCON.hash(clientNonce, serverNonce);
   };
 
 
-  FSRCON.verify = function (clientVerificationKey, serverRandomKey, serverHashedPassword) {
+  FSRCON.verify = function (clientVerificationKey, serverNonce, serverHashedPassword) {
     return FSRCON.hash(
-      clientVerificationKey + serverRandomKey + serverHashedPassword
+      clientVerificationKey, serverNonce, serverHashedPassword
     );
   };
 
@@ -96,13 +119,13 @@
     this.hostname = options.hostname || 'localhost';
     this.port = options.port || '';
     this.XMLHttpRequest = options.XMLHttpRequest || 'undefined' !== typeof window && window.XMLHttpRequest;
-    this.clientRandomKey = FSRCON.randomKey();
+    this.clientNonce = FSRCON.nonce();
     this.accountId = options.accountId || null;
     this.clientAccountKey = this.accountId ?
-      FSRCON.accountKey(this.accountId, this.clientRandomKey) : null;
+      FSRCON.accountKey(this.accountId, this.clientNonce) : null;
     this.password = null; // SA1
     this.hashedPassword = null; // SA2
-    this.serverRandomKey = null;
+    this.serverNonce = null;
     this.clientVerificationKey = null;
     this.serverOK = null;
     this.SID = null;  
@@ -136,9 +159,9 @@
         try {
           parsedResponse = JSON.parse(this.response);
 
-          if (parsedResponse && parsedResponse.SRK && this.status >= 200 && this.status < 300) {            
-            self.serverRandomKey = parsedResponse.SRK;
-            self.SID = FSRCON.sid(self.clientRandomKey, self.serverRandomKey);
+          if (parsedResponse && parsedResponse.SN && this.status >= 200 && this.status < 300) {            
+            self.serverNonce = parsedResponse.SN;
+            self.SID = FSRCON.sid(self.clientNonce, self.serverNonce);
           } 
           else {
             throw(new Error(this.response));
@@ -156,7 +179,7 @@
       };
 
       data = {
-        CRK: self.clientRandomKey        
+        CN: self.clientNonce        
       };
 
       if (self.clientAccountKey) {
@@ -179,18 +202,18 @@
     this.serverOK = false;    
 
     // SA1 (== SB0)
-    this.password = FSRCON.password(
+    this.password = FSRCON.passwordS1(
       passwordS0, 
       this.accountId
     );
 
     this.hashedPassword = FSRCON.hashPassword(
       this.password,
-      this.clientRandomKey,
-      this.serverRandomKey
+      this.clientNonce,
+      this.serverNonce
     );
 
-    this.clientVerificationKey = FSRCON.randomKey();
+    this.clientVerificationKey = FSRCON.nonce();
 
     return new Promise(function (resolve, reject) {
 
@@ -217,7 +240,7 @@
             
             expectedTestResult = FSRCON.verify(
               self.clientVerificationKey,
-              self.serverRandomKey,
+              self.serverNonce,
               self.hashedPassword
             );
 
@@ -309,8 +332,8 @@
   * Server 
   **/
   var Server = FSRCON.Server = function () {
-    this.clientRandomKey = null;
-    this.serverRandomKey = null;
+    this.clientNonce = null;
+    this.serverNonce = null;
     this.SID = null; 
     this.accountId = null;
     this.clientOK = null;
@@ -321,13 +344,13 @@
 
   Server.prototype.init = function (options, callback) {
 
-    if (!options.clientRandomKey) {
-      callback(new Error('EINVALIDCRK'));
+    if (!options.clientNonce) {
+      callback(new Error('EINVALIDCN'));
     } 
 
-    this.clientRandomKey = options.clientRandomKey;
-    this.serverRandomKey = FSRCON.randomKey();
-    this.SID = FSRCON.sid(this.clientRandomKey, this.serverRandomKey);
+    this.clientNonce = options.clientNonce;
+    this.serverNonce = FSRCON.nonce();
+    this.SID = FSRCON.sid(this.clientNonce, this.serverNonce);
 
     this.accountId = null;
     this.clientOK = null;
@@ -372,7 +395,7 @@
       this.accountId = this.findAccount(
         accounts,
         this.clientAccountKey,
-        this.clientRandomKey
+        this.clientNonce
       );
 
       if (!this.accountId) {
@@ -384,8 +407,8 @@
 
       this.serverHashedPassword = FSRCON.hashPassword(
         password,
-        this.clientRandomKey, 
-        this.serverRandomKey
+        this.clientNonce, 
+        this.serverNonce
       );
 
       this.clientOK = clientHashedPassword && clientHashedPassword === this.serverHashedPassword;
@@ -396,7 +419,7 @@
 
       this.serverVerification = FSRCON.verify(
         clientVerificationKey,
-        this.serverRandomKey,
+        this.serverNonce,
         this.serverHashedPassword
       );
       

@@ -15,7 +15,9 @@ var rcon = new FSRCON.Client({
     hostname: 'localhost',
     port: 3000,
     // optional: account id
-    accountId: 'xyz'  
+    accountId: 'xyz',
+    // optional: XMLHttpRequest
+    XMLHttpRequest: XMLHttpRequest
 })
 ```
 
@@ -110,8 +112,8 @@ data will be sent as stringified JSON via POST:
 * protocol
 * hostname
 * port
-* clientRandomKey
-* serverRandomKey
+* clientNonce
+* serverNonce
 * SID 
 * serverOK
 
@@ -123,7 +125,7 @@ create a server instance
  var rcon = new FSRCON.Server();
 ```
 
-#### Server.init(clientRandomKey)
+#### Server.init(clientNonce)
 
 initializes a connection to a client when `Client.init()` was received.
 
@@ -135,7 +137,7 @@ server.post('/init', function (req, res){
   var rcon = FSRCON.Server();
 
   rcon.init({
-    clientRandomKey: req.body && req.body.CRK,
+    clientNonce: req.body && req.body.CN,
     clientAccountKey: eq.body && req.body.CAK
   }, function (err) {
 
@@ -147,7 +149,7 @@ server.post('/init', function (req, res){
     connections[rcon.SID] = rcon;
 
     res.end(JSON.stringify({
-      SRK: rcon.serverRandomKey
+      SN: rcon.serverNonce
     }));
     
   });
@@ -180,20 +182,20 @@ rcon.connect(
 
 #### Server instance fields
 
-* clientRandomKey
-* serverRandomKey
+* clientNonce
+* serverNonce
 * SID
 * clientOK
 
 ### Static Methods
 
-#### FSRCON.hash(strVal)
+#### FSRCON.hash(..val)
 
-get a base64-encoded SHA-512 fingerprint
+get a SHA-512-based fingerprint
 
 ```
 FSRCON.hash('0.1234')
--> '56KwnzFuvBUaqvqhFkG46Psj0bUIz9LiMGy7dgZPt+DF/8wj5t/pkBPp+6FDUvZF2iOu+E2uCkgotDmtHAo6JA=='
+-> '56KwnzFuvBUaqvqhFkG46Psj0bUIz9LiMGy7dgZPtDF8wj5tpkBPp6FDUvZF2iOuE2uCkgotDmtHAo6JA'
 ```
 
 #### FSRCON.encrypt(message, secret)

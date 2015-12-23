@@ -3,14 +3,14 @@ var bodyParser = require('body-parser'),
   connections = {},
   accounts = {};
 
-addAccountsTo(accounts);
-
-function addAccountsTo(accounts) {
+function addAccountsTo (accounts) {
   var accountId = FSRCON.hash('email@domain.tld');
   accounts[accountId] = {
-    password: FSRCON.password('my secret s0', accountId)
+    password: FSRCON.passwordS1('my secret s0', accountId)
   };
 }
+
+addAccountsTo(accounts);
 
 module.exports = function(server){
 
@@ -23,12 +23,12 @@ module.exports = function(server){
 
   server.post('/fsrcon/init', function (req, res){
 
-    var clientRandomKey = req.body && req.body.CRK ? req.body.CRK : undefined,
+    var clientNonce = req.body && req.body.CN ? req.body.CN : undefined,
       clientAccountKey =  req.body && req.body.CAK ? req.body.CAK : undefined,
       rcon = new FSRCON.Server();
 
     rcon.init({
-      clientRandomKey: clientRandomKey,
+      clientNonce: clientNonce,
       clientAccountKey: clientAccountKey
     }, function (err) {
 
@@ -40,7 +40,7 @@ module.exports = function(server){
       connections[rcon.SID] = rcon;
 
       res.end(JSON.stringify({
-        SRK: rcon.serverRandomKey
+        SN: rcon.serverNonce
       }));
       
     });
