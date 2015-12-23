@@ -1,6 +1,6 @@
 {
   "name": "fs-rcon",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A connection to remote fs",
   "main": "fs-rcon.js",
   "keywords": [

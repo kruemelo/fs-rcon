@@ -157,15 +157,21 @@
         var parsedResponse;
 
         try {
-          parsedResponse = JSON.parse(this.response);
 
-          if (parsedResponse && parsedResponse.SN && this.status >= 200 && this.status < 300) {            
+          if (this.status < 200 || this.status >= 300) {
+            throw new Error(this.response);
+          }
+            
+          parsedResponse = JSON.parse(this.response);
+          
+          if (parsedResponse && parsedResponse.SN) {
             self.serverNonce = parsedResponse.SN;
-            self.SID = FSRCON.sid(self.clientNonce, self.serverNonce);
-          } 
+            self.SID = FSRCON.sid(self.clientNonce, self.serverNonce);              
+          }
           else {
             throw(new Error(this.response));
           }                
+
         }
         catch (e) {
           reject(e);
@@ -234,9 +240,15 @@
           expectedTestResult;
 
         try {
+
+          if (this.status < 200 || this.status >= 300) {
+            throw new Error(this.response);
+          }
+
           parsedResponse = JSON.parse(this.response);
           serverVerification = parsedResponse && parsedResponse.STR;
-          if (serverVerification && this.status >= 200 && this.status < 300) {
+          
+          if (serverVerification) {
             
             expectedTestResult = FSRCON.verify(
               self.clientVerificationKey,
