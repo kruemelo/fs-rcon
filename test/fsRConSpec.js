@@ -165,7 +165,7 @@ define([
     });
 
 
-    it('should not establish an authenticated connection', function (done) {
+    it('should fail authenticated connection', function (done) {
 
       var accountId = FSRCON.hash('email@domain.tld'),
         rcon = new FSRCON.Client({
@@ -173,8 +173,6 @@ define([
           port: 3000,
           accountId: accountId
         });
-      
-      assert.isFunction(rcon.connect);
 
       function test (err) {
         try {

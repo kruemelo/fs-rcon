@@ -295,7 +295,7 @@
       xhr,
       url = FSRCON.url(this, urlPathname);
 
-    xhr = new XMLHttpRequest();
+    xhr = new this.XMLHttpRequest();
 
     // The last parameter must be set to true to make an asynchronous request
     xhr.open('POST', url, true);
