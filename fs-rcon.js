@@ -305,21 +305,16 @@
     xhr.setRequestHeader('Cache-Control', 'no-cache');
     
     xhr.onload = function () {
-      try {
-        if (this.status >= 200 && this.status < 300) {
-          if (self.serverOK) {
-            callback(null, FSRCON.decrypt(this.response, self.hashedPassword));
-          }
-          else {
-            callback(null, this.response);
-          }        
-        } 
+      if (this.status >= 200 && this.status < 300) {
+        if (self.serverOK) {
+          callback(null, FSRCON.decrypt(this.response, self.hashedPassword));
+        }
         else {
-          throw new Error(this.response);
-        }      
-      }
-      catch (err) {
-        callback(err);
+          callback(null, this.response);
+        }        
+      } 
+      else {
+        callback(new Error(this.response));
       }
     };
 
