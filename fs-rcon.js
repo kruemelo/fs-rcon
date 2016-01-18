@@ -198,7 +198,7 @@
   };  // Client.init
 
 
-  Client.prototype.connect = function (urlPathname, passwordS0) {
+  Client.prototype.connect = function (urlPathname, passwordS0, options) {
 
     var self = this,
       data = {};
@@ -280,7 +280,8 @@
       data = {
         SID: self.SID,
         CHP: self.hashedPassword,
-        CVK: self.clientVerificationKey
+        CVK: self.clientVerificationKey,
+        options: options
       };
 
       xhr.send(JSON.stringify(data));
@@ -339,6 +340,7 @@
   * Server 
   **/
   var Server = FSRCON.Server = function () {
+    this.options = null;
     this.clientNonce = null;
     this.serverNonce = null;
     this.SID = null; 
@@ -349,13 +351,14 @@
   };
 
 
-  Server.prototype.init = function (options, callback) {
+  Server.prototype.init = function (request, callback) {
 
-    if (!options.clientNonce) {
+    if (!request.clientNonce) {
       callback(new Error('EINVALIDCN'));
     } 
 
-    this.clientNonce = options.clientNonce;
+    this.options = null;
+    this.clientNonce = request.clientNonce;
     this.serverNonce = FSRCON.nonce();
     this.SID = FSRCON.sid(this.clientNonce, this.serverNonce);
 
@@ -364,7 +367,7 @@
     this.serverVerification = null;
     this.serverHashedPassword = null;
 
-    this.clientAccountKey = options.clientAccountKey;
+    this.clientAccountKey = request.clientAccountKey;
 
     callback(null);
 
@@ -384,17 +387,18 @@
   };  // Server.findAccount()
 
 
-  Server.prototype.connect = function (options, callback) {
+  Server.prototype.connect = function (request, callback) {
 
     var error = null,
-      accounts = options.accounts,
-      clientHashedPassword = options.clientHashedPassword,
-      clientVerificationKey = options.clientVerificationKey,
+      accounts = request.accounts,
+      clientHashedPassword = request.clientHashedPassword,
+      clientVerificationKey = request.clientVerificationKey,
       account,
       password;
 
     try {
     
+      this.options = request.options || {};
       this.clientOK = false;
       this.serverVerification = null;
       this.serverHashedPassword = null;

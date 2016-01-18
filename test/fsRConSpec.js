@@ -99,8 +99,7 @@ define([
           test,
           test
         );
-
-    });
+    }); // initialize a session
 
 
     it('should send a request', function (done) {
@@ -132,8 +131,7 @@ define([
           },
           test
         );
-
-    });
+    }); // should send a request
 
 
     it('should establish an authenticated connection', function (done) {
@@ -162,7 +160,7 @@ define([
               .then(test, test);
           }
         );
-    });
+    }); // should establish an authenticated connection
 
 
     it('should fail authenticated connection', function (done) {
@@ -193,7 +191,8 @@ define([
               );
           }
         );
-    });
+    }); // should fail authenticated connection
+
 
     it('should send encrypted for authenticated connection', function (done) {
 
@@ -225,8 +224,9 @@ define([
               );
           }
         );
+    }); // should send encrypted
 
-    });
+
   }); // describe fs-rcon
 
 }); // define

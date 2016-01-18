@@ -78,7 +78,8 @@ module.exports = function(server){
       {
         accounts: accounts,
         clientHashedPassword: req.body.CHP,
-        clientVerificationKey: req.body.CVK
+        clientVerificationKey: req.body.CVK,
+        options: req.body.options
       }, 
       function (err) {     
         if (err) {
