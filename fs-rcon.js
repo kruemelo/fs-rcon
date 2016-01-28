@@ -64,8 +64,9 @@
 
 
   FSRCON.decrypt = function (encrypted, secret) {
-    var decrypted = CryptoJS.AES.decrypt(encrypted, secret, {format: AESJsonFormatter});
-    return decrypted.toString(CryptoJS.enc.Utf8);
+    var decrypted = encrypted ? 
+      CryptoJS.AES.decrypt(encrypted, secret, {format: AESJsonFormatter}) : '';
+    return encrypted && decrypted ? decrypted.toString(CryptoJS.enc.Utf8) : '';
   };
 
 
@@ -466,20 +467,26 @@
 
     parse: function (jsonStr) {
       // parse json string
-      var jsonObj = JSON.parse(jsonStr);
+      var jsonObj = null,
+        cipherParams = null;
 
-      // extract ciphertext from json object, and create cipher params object
-      var cipherParams = CryptoJS.lib.CipherParams.create({
-        ciphertext: CryptoJS.enc.Base64.parse(jsonObj.ct)
-      });
+      try {
+        jsonObj = JSON.parse(jsonStr);        
 
-      // optionally extract iv and salt
-      if (jsonObj.iv) {
-        cipherParams.iv = CryptoJS.enc.Hex.parse(jsonObj.iv);
+        // extract ciphertext from json object, and create cipher params object
+        cipherParams = CryptoJS.lib.CipherParams.create({
+          ciphertext: CryptoJS.enc.Base64.parse(jsonObj.ct)
+        });
+
+        // optionally extract iv and salt
+        if (jsonObj.iv) {
+          cipherParams.iv = CryptoJS.enc.Hex.parse(jsonObj.iv);
+        }
+        if (jsonObj.s) {
+          cipherParams.salt = CryptoJS.enc.Hex.parse(jsonObj.s);
+        }
       }
-      if (jsonObj.s) {
-        cipherParams.salt = CryptoJS.enc.Hex.parse(jsonObj.s);
-      }
+      catch (e) {}
 
       return cipherParams;
     }
