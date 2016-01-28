@@ -58,7 +58,7 @@
 
 
   FSRCON.encrypt = function (message, secret) {
-    var encrypted = CryptoJS.AES.encrypt(message, secret);
+    var encrypted = CryptoJS.AES.encrypt(String(message), secret);
     return AESJsonFormatter.stringify(encrypted);
   };
 
