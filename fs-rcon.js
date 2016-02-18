@@ -320,6 +320,10 @@
       }
     };
 
+    xhr.onerror = function () {
+      callback(new Error('EXHRSEND'));
+    };
+
     if (this.serverOK) {
       xhr.send(JSON.stringify({
         SID: this.SID,
