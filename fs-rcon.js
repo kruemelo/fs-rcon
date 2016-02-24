@@ -90,12 +90,6 @@
     return FSRCON.hash(accountId, nonce);
   };
 
-  // SA1 == SB0
-  FSRCON.passwordS1 = function (passwordS0, accountId) {
-    return FSRCON.hash(passwordS0, accountId);
-  };
-
-
   // SA2  
   FSRCON.hashPassword = function (passwordS1, clientNonce, serverNonce) {
     return FSRCON.hash(passwordS1, clientNonce, serverNonce);
@@ -199,7 +193,7 @@
   };  // Client.init
 
 
-  Client.prototype.connect = function (urlPathname, passwordS0, options) {
+  Client.prototype.connect = function (urlPathname, passwordS1, options) {
 
     var self = this,
       data = {};
@@ -209,10 +203,7 @@
     this.serverOK = false;    
 
     // SA1 (== SB0)
-    this.password = FSRCON.passwordS1(
-      passwordS0, 
-      this.accountId
-    );
+    this.password = passwordS1;
 
     this.hashedPassword = FSRCON.hashPassword(
       this.password,

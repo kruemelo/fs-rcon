@@ -141,7 +141,8 @@ define([
           hostname: 'localhost',
           port: 3000,
           accountId: accountId
-        });
+        }),
+        passwordS1 = FSRCON.hash('my secret s0', accountId);
       
       assert.isFunction(rcon.connect);
 
@@ -156,7 +157,7 @@ define([
       rcon.init('fsrcon/init')
         .then(
           function () {
-            rcon.connect('fsrcon/connect', 'my secret s0')
+            rcon.connect('fsrcon/connect', passwordS1)
               .then(test, test);
           }
         );
@@ -170,7 +171,8 @@ define([
           hostname: 'localhost',
           port: 3000,
           accountId: accountId
-        });
+        }),
+        passwordS1 = FSRCON.hash('not my secret s0', accountId);
 
       function test (err) {
         try {
@@ -184,7 +186,7 @@ define([
       rcon.init('fsrcon/init')
         .then(
           function () {
-            rcon.connect('fsrcon/connect', 'not my secret s0')
+            rcon.connect('fsrcon/connect', passwordS1)
               .then(
                 test, 
                 test
@@ -201,7 +203,8 @@ define([
           hostname: 'localhost',
           port: 3000,
           accountId: accountId
-        });
+        }),
+        passwordS1 = FSRCON.hash('my secret s0', accountId);
 
       function test (err, result) {
         try {
@@ -215,7 +218,7 @@ define([
       rcon.init('fsrcon/init')
         .then(
           function () {
-            rcon.connect('fsrcon/connect', 'my secret s0')
+            rcon.connect('fsrcon/connect', passwordS1)
               .then(
                 function () {
                   rcon.send('some content', 'restricted', test);

@@ -6,7 +6,7 @@ var bodyParser = require('body-parser'),
 function addAccountsTo (accounts) {
   var accountId = FSRCON.hash('email@domain.tld');
   accounts[accountId] = {
-    password: FSRCON.passwordS1('my secret s0', accountId)
+    password: FSRCON.hash('my secret s0', accountId)
   };
 }
 
